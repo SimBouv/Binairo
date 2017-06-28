@@ -1,0 +1,13 @@
+.settings/
+
+bin/
+
+META-INF
+
+.classpath
+
+.project
+
+TO_DO.txt
+
+*.db
