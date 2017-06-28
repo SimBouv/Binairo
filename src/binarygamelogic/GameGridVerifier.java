@@ -3,14 +3,20 @@ package binarygamelogic;
 import java.util.Arrays;
 import java.util.Random;
 
+/*
+ * Class containing static methods used to check if a cell, a row/column or a whole grid is valid in respect to the game constraints.
+ * Contains also a method to find if a given grid (which can be partially filled) has zero, one or multiple solutions.
+ */
+
+
 public class GameGridVerifier {
 	
 	
 	/*
-	 * Generate and return a randomly generated valid game grid.
+	 * Method that find if there is 0, 1 or multiple solutions for the given game grid.
 	 * 
-	 * @param gridsize	the size of the generated solution grid
-	 * @return			a randomly generated valid solution grid
+	 * @param cellsValue	the grid for which the method must find the number of possible solutions
+	 * @return				0 if there is no possible solution for the given grid, 1 if there is exactly one solution or 2 if there are multiple solutions
 	*/
 	public static int getNbrOfSolutions(byte[][] cellsValue) throws IllegalArgumentException{
 		byte[][] cellsValueCopy = new byte[cellsValue.length][cellsValue.length];		
@@ -27,46 +33,41 @@ public class GameGridVerifier {
 	
 	
 	/*	
-	 * Generate a random valid solution grid from which we derive the starting game grid.
-	 * This function call itself recursively to generate the grid row by row, using at each
-	 * step the rows already generated to enforce the various constraint defined by the game.
-	 * (this allow the method to narrow the possible valid rows that it can build at each step).
+	 * Method called recursively to find the number of solutions for the given grid, which try to solve the grid
+	 * by filling one free cell at a time and backtracking when one of the game constraints is not respected. 
 	 * 
-	 * @param gridSize		the size of the solution grid that the method is building
-	 * @param grid			an ArrayList containing the rows that the method has built until now
-	 * @param colNumberZero	a byte array containing the number of times the number 0 appear in each column of the grid
-	 * @param colNumberOne	a byte array containing the number of times the number 1 appear in each column of the grid
-	 * @return				boolean value indicating if the method can generate the next row or not, considering the constraints enforced by the rows already built
+	 * @param rowInd			row index of the cell to fill with a value
+	 * @param cellsValue		the grid that the method is filling to find the number of possible solutions 
+	 * @param nbrOfSolutions	the number of solutions found until now
+	 * @return					0 if the grid violate one of the constraint, 1 if all the cells has been filled and the grid is valid, 2 as soon as the method find a second solution
 	*/   
 	private static int getNbrOfSolutions(int rowInd, byte[][] cellsValue, int nbrOfSolutions) {
 		if (nbrOfSolutions >= 2)
 			return 2;
 		
-		//If true, then the grid has been successfully built.
+		//If true, then the grid has been successfully filled and form a valid solution
 		if (rowInd == cellsValue.length) {
 			nbrOfSolutions++;
 			return nbrOfSolutions;
 		}
 		
-		return randomlyFillRow(rowInd, 0, cellsValue, nbrOfSolutions);
+		return randomlyFillCells(rowInd, 0, cellsValue, nbrOfSolutions);
 	}
 	
 
 	
 	/*
-	 * Method that finish filling the row selecting randomly between 0 or 1. At each step the method find
-	 * the next empty cell then decide randomly which value to try to put in it first, then call itself
-	 * recursively to fill the next empty cell.
+	 * Method that try to randomly fill the given cell (if it is empty) of the grid,
+	 * verifying after filling each one if the grid is still valid before continuing.
 	 * 
-	 * @param grid				the solution grid built until now
-	 * @param newRowInd			the index of the new row that is being built
-	 * @param freeCellInd		the index of the free cell to fill with a value
-	 * @param colNumberZeros	the number of zeros that appear in each column (in the grid built until now)
-	 * @param colNumberOnes		the number of ones that appear in each column (in the grid built until now)
-	 * @return					true if we can complete the row and after that the whole grid from here, false otherwise
+	 * @param rowInd			row index of the cell to randomly fill
+	 * @param colInd			column index of the cell to randomly fill
+	 * @param cellsValue		the grid that the method is filling to find the number of possible solutions
+	 * @param nbrOfSolutions	the number of solutions found until now
+	 * @return					0 if the grid violate one of the constraint, 1 if all the cells has been filled and the grid is valid, 2 as soon as the method find a second solution
 	 */
-	private static int randomlyFillRow(int rowInd, int colInd, byte[][] cellsValue, int nbrOfSolutions) {
-		//If true, then we have filled all the cells in the row and can then add it to the grid
+	private static int randomlyFillCells(int rowInd, int colInd, byte[][] cellsValue, int nbrOfSolutions) {
+		//If true, then we have filled all the cells in the row and can go to the next one
 		if (colInd == cellsValue[rowInd].length)
 			return getNbrOfSolutions(rowInd+1, cellsValue, nbrOfSolutions);
 
@@ -85,12 +86,14 @@ public class GameGridVerifier {
 			for (int i = 0 ; i < randomValues.length ; i++) {
 				cellsValue[rowInd][colInd] = randomValues[i];
 	
+				//Check if the grid is still valid after filling this cell with the random value.
 				if (GameGridVerifier.checkLocalCellConstraints(rowInd, colInd, cellsValue) &&
 					GameGridVerifier.checkRowConstraints(rowInd, cellsValue) &&
 					GameGridVerifier.checkColConstraints(colInd, cellsValue))
 				{
-					nbrOfSolutions = randomlyFillRow(rowInd, colInd+1, cellsValue, nbrOfSolutions);
+					nbrOfSolutions = randomlyFillCells(rowInd, colInd+1, cellsValue, nbrOfSolutions);
 					
+					//Return immediately the method has already found more than one solution.
 					if (nbrOfSolutions >= 2)
 						return 2;
 				}
@@ -99,15 +102,21 @@ public class GameGridVerifier {
 			cellsValue[rowInd][colInd] = Game.CELLVALUE_EMPTY;
 		}
 		else
-			nbrOfSolutions = randomlyFillRow(rowInd, colInd+1, cellsValue, nbrOfSolutions);
+			nbrOfSolutions = randomlyFillCells(rowInd, colInd+1, cellsValue, nbrOfSolutions);
 		
-		//The method wasn't able to find a valid row considering the rows already added to 
-		//the solution grid : must then backtrack in the grid creation process.
+		//The method wasn't able to find a valid solution grid from this point : must backtrack to the previous cell
+		//and try filling it with another value. 
 		return nbrOfSolutions;
 	}
 	
 	
-	
+	/*
+	 * Method that verify if the given grid (which can be partially completed) is valid 
+	 * (if it respect every constraints of the game).
+	 * 
+	 * @param cellsValue	the grid to verify, which can be only partially filled
+	 * @return				true if the grid respect every constraints of the game, false otherwise
+	 */
 	public static boolean isValidGrid(byte[][] cellsValue) {
 		for (int rowInd = 0 ; rowInd < cellsValue.length ; rowInd++)
 			for (int colInd = 0 ; colInd < cellsValue.length ; colInd++) {
@@ -129,79 +138,104 @@ public class GameGridVerifier {
 		return true;
 	}
 	
+	
+	/*
+	 * Method that verify if a given cell is valid locally (the cell must not be part
+	 * of a series of three consecutive non-empty cells with the same value).
+	 * 
+	 * @param rowInd		row index of the cell to check for validity
+	 * @param colInd		column index of the cell to check for validity
+	 * @param cellsValue	the grid containing the cells' value (can be partially filled)
+	 * @return				true if the cell is not in a series of 3 identical cells
+	 */
 	public static boolean checkLocalCellConstraints(int rowInd, int colInd, byte[][] cellsValue) {
 		byte[] cellTrio;
 		
+		//Check series : given cell + 2 cells on the left
 		if (rowInd > 1) {
 			cellTrio = new byte[3];
 			cellTrio[2] = cellsValue[rowInd][colInd];
 			cellTrio[1] = cellsValue[rowInd-1][colInd];
 			cellTrio[0] = cellsValue[rowInd-2][colInd];
 			
-			if (identicalCellSerie(cellTrio))
+			if (identicalCellSeries(cellTrio))
 				return false;
 		}
 		
+		//Check series : given cell + 2 cells on the right
 		if (rowInd < cellsValue.length-2) {
 			cellTrio = new byte[3];
 			cellTrio[0] = cellsValue[rowInd][colInd];
 			cellTrio[1] = cellsValue[rowInd+1][colInd];
 			cellTrio[2] = cellsValue[rowInd+2][colInd];
 			
-			if (identicalCellSerie(cellTrio))
+			if (identicalCellSeries(cellTrio))
 				return false;
 		}
 		
+		//Check series : given cell + 2 cells over
 		if (colInd > 1) {
 			cellTrio = new byte[3];
 			cellTrio[2] = cellsValue[rowInd][colInd];
 			cellTrio[1] = cellsValue[rowInd][colInd-1];
 			cellTrio[0] = cellsValue[rowInd][colInd-2];
 			
-			if (identicalCellSerie(cellTrio))
+			if (identicalCellSeries(cellTrio))
 				return false;
 		}
 		
+		//Check series : given cell + 2 cells under
 		if (colInd < cellsValue[rowInd].length-2) {
 			cellTrio = new byte[3];
 			cellTrio[0] = cellsValue[rowInd][colInd];
 			cellTrio[1] = cellsValue[rowInd][colInd+1];
 			cellTrio[2] = cellsValue[rowInd][colInd+2];
 			
-			if (identicalCellSerie(cellTrio))
+			if (identicalCellSeries(cellTrio))
 				return false;
 		}
 		
+		//Check series : given cell + 1 cell on the left and 1 cell on the right
 		if (rowInd > 0 && rowInd < cellsValue.length-1) {
 			cellTrio = new byte[3];
 			cellTrio[1] = cellsValue[rowInd][colInd];
 			cellTrio[0] = cellsValue[rowInd-1][colInd];
 			cellTrio[2] = cellsValue[rowInd+1][colInd];
 			
-			if (identicalCellSerie(cellTrio))
+			if (identicalCellSeries(cellTrio))
 				return false;
 		}
 		
+		//Check series : given cell + 1 cell over and 1 cell under
 		if (colInd > 0 && colInd < cellsValue[rowInd].length-1) {
 			cellTrio = new byte[3];
 			cellTrio[1] = cellsValue[rowInd][colInd];
 			cellTrio[0] = cellsValue[rowInd][colInd-1];
 			cellTrio[2] = cellsValue[rowInd][colInd+1];
 			
-			if (identicalCellSerie(cellTrio))
+			if (identicalCellSeries(cellTrio))
 				return false;
 		}
 		
+		//Found no identical series of 3 cells
 		return true;		
 	}
 	
-	private static boolean identicalCellSerie(byte[] cellSerie) {
-		int currValue = cellSerie[0];
-		for (int cellInd = 0 ; cellInd < cellSerie.length ; cellInd++) {
-			if (cellSerie[cellInd] == Game.CELLVALUE_EMPTY)
+	
+	/*
+	 * Method used to check if the given cells are identical, which mean that they are not empty
+	 * and all have the same value.
+	 * 
+	 * @param cellSeries	the series of cells to compare
+	 * @return				true if all of the cells are identical, false otherwise
+	 */
+	private static boolean identicalCellSeries(byte[] cellSeries) {
+		int currValue = cellSeries[0];
+		for (int cellInd = 0 ; cellInd < cellSeries.length ; cellInd++) {
+			if (cellSeries[cellInd] == Game.CELLVALUE_EMPTY)
 				return false;
 			else
-				if (cellSerie[cellInd] != currValue)
+				if (cellSeries[cellInd] != currValue)
 					return false;
 		}
 		
@@ -212,7 +246,13 @@ public class GameGridVerifier {
 	
 	
 	
-	
+	/*
+	 * Method that check if the given row respect all of the game constraints.
+	 * 
+	 * @param rowInd		index of the row to check
+	 * @param cellsValue	the grid containing the cells' value (can be partially filled)
+	 * @return				true if the row is valid (respect all of the game constraints), false otherwise
+	 */
 	public static boolean checkRowConstraints(int rowInd, byte[][] cellsValue) {
 		int nbrOfZeros = 0, nbrOfOnes = 0;
 		boolean rowIsComplete = true;
@@ -227,20 +267,23 @@ public class GameGridVerifier {
 		
 		int maxSameNumber = cellsValue[rowInd].length/2;
 		
+		//Check if the given row doesn't have too many of the same value
 		if (nbrOfZeros > maxSameNumber || nbrOfOnes > maxSameNumber)
 			return false;
+		//If the row is completely filled, check if there is an identical row in the grid
 		else if (rowIsComplete)
 			return !checkForIdenticalRows(rowInd, cellsValue);
 		else
 			return true;
 	}	
 	
+	
 	/*
-	 * Method that check if the new row to be added to the grid is identical to a row that was added before.
+	 * Method that check if a given row is identical to another row in the grid (if both rows are completely filled).
 	 * 
-	 * @param grid		the solution grid built until now
-	 * @param newrowInd	the index in the grid of the new row is to be added to the grid
-	 * @return			true if there is a row in the grid that is identical to the new row to be added, false otherwise
+	 * @param rowInd		index of to row to check
+	 * @param cellsValue	the grid containing the cells' value (can be partially filled)
+	 * @return				true if the row is completely filled and there is an identical row in the grid, false otherwise
 	 */
 	public static boolean checkForIdenticalRows(int rowInd, byte[][] cellsValue) {	
 		byte[] firstRow = cellsValue[rowInd];
@@ -258,7 +301,13 @@ public class GameGridVerifier {
 	}
 	
 	
-	
+	/*
+	 * Method that check if the given column respect all of the game constraints.
+	 * 
+	 * @param colInd		index of the column to check
+	 * @param cellsValue	the grid containing the cells' value (can be partially filled)
+	 * @return				true if the column is valid (respect all of the game constraints), false otherwise
+	 */
 	public static boolean checkColConstraints(int colInd, byte[][] cellsValue) {
 		int nbrOfZeros = 0, nbrOfOnes = 0;
 		boolean colIsComplete = true;
@@ -273,14 +322,24 @@ public class GameGridVerifier {
 		
 		int maxSameNumber = cellsValue.length/2;
 		
+		//Check if the given column doesn't have too many of the same value
 		if (nbrOfZeros > maxSameNumber || nbrOfOnes > maxSameNumber)
 			return false;
+		//If the column is completely filled, check if there is an identical column in the grid
 		else if (colIsComplete)
 			return !checkForIdenticalColumns(colInd, cellsValue);
 		else
 			return true;
 	}
 	
+	
+	/*
+	 * Method that check if a given column is identical to another column in the grid (only if both columns are completely filled).
+	 * 
+	 * @param colInd		index of to column to check
+	 * @param cellsValue	the grid containing the cells' value (can be partially filled)
+	 * @return				true if the column is completely filled and there is an identical column in the grid, false otherwise
+	 */
 	public static boolean checkForIdenticalColumns(int colInd, byte[][] cellsValue) {
 		byte[] firstCol = getGridColumn(colInd, cellsValue);
 		byte[] secondCol;
@@ -296,6 +355,7 @@ public class GameGridVerifier {
 		return false;
 	}
 
+	
 	/*
 	 * Method that return the specified column of the grid in array form.
 	 * 

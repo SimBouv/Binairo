@@ -5,6 +5,12 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Random;
 
+/*
+ * Class containing static methods used to randomly generate a starting game grid based on a
+ * valid solution grid.
+ */
+
+
 public class StartingGameGridGenerator {
 	//Constant representing the different levels of difficulty of the game
 	public static final byte BINAIRO_LEVEL_ONE = 1;
@@ -26,12 +32,15 @@ public class StartingGameGridGenerator {
 	/*
 	 * Method that return a randomly generated starting grid, based on the solution grid and game level given as arguments.
 	 * 
-	 * @param solutionGrid	
-	 * @param gameLevel		
-	 * @return				
+	 * @param solutionGrid	the solution grid from which the method build the starting game grid
+	 * @param gameLevel		the difficulty level of the game, which determine how many cells will be given in the starting game grid
+	 * @return				a starting game grid for which there exist only one solution (which is the solution grid given as argument)
 	 */
 	public static boolean[][] getStartingGrid(byte[][] solutionGrid, byte gameLevel) {
 		int nbrOfCellsToFix, nbrOfIdenticalPairsToFix, nbrOfPairsToFix, nbrOfHolesToFix;
+		
+		//Set the number of identical pairs, pairs in general and hole cells to try to fix in the starting game grid,
+		//depending on the difficulty level of the game.
 		switch (gameLevel) {
 			case BINAIRO_LEVEL_ONE :	nbrOfCellsToFix = 65;
 										nbrOfIdenticalPairsToFix = 35; 
@@ -40,9 +49,9 @@ public class StartingGameGridGenerator {
 					 					break;
 					 
 			case BINAIRO_LEVEL_TWO :	nbrOfCellsToFix = 40;
-										nbrOfIdenticalPairsToFix = 15;		
-										nbrOfPairsToFix = 17;
-										nbrOfHolesToFix = 5;
+										nbrOfIdenticalPairsToFix = 12;		
+										nbrOfPairsToFix = 10;
+										nbrOfHolesToFix = 0;
 					 					break;
 					 
 			case BINAIRO_LEVEL_THREE :	nbrOfCellsToFix = 30;
@@ -57,16 +66,24 @@ public class StartingGameGridGenerator {
 		
 		boolean[][] fixedCells = new boolean[solutionGrid.length][solutionGrid.length];
 		
+		
 		int nbrOfFixedPairs = fixSeparateCellPairs(fixedCells, solutionGrid, nbrOfIdenticalPairsToFix, true);
 		completeCellPairs(fixedCells, solutionGrid, nbrOfPairsToFix - nbrOfFixedPairs, true);
 		int nbrOfFixedHoles = fixCellsHole(fixedCells, solutionGrid, nbrOfHolesToFix, true);
 		completeCellHoles(fixedCells, solutionGrid, nbrOfHolesToFix - nbrOfFixedHoles, true);
+		
+
+		
 
 		/*
 		int nbrOfFixedCells = getNbrOfFixedCells(fixedCells);
 		if (nbrOfFixedCells < nbrOfCellsToFix)
 			fixCells(fixedCells, solutionGrid, nbrOfCellsToFix-nbrOfFixedCells, false, false, false);
 		*/
+		
+		//fixCells(fixedCells, solutionGrid, nbrOfCellsToFix, false, true, false);
+		
+		
 		
 		makeStartingGridSingleSolution(fixedCells, solutionGrid);
 				
@@ -106,7 +123,7 @@ public class StartingGameGridGenerator {
 	 * cells (horizontally or vertically) that has been fixed.
 	 * 
 	 * @param fixedCells			the matrix indicating which cells has been fixed in the game grid
-	 * @param cellsValue			the matrix containing the solution grid
+	 * @param solutionGrid			the matrix containing the solution grid
 	 * @param nbrOfPairsToFix		the number of separated pairs that the method will try to fix in the grid
 	 * @param identicalPairsOnly	true if the method must only create pairs of identical values, false otherwise 
 	 * @return						the number of separate cell pairs that the method has successfully fixed in the game grid
@@ -175,7 +192,7 @@ public class StartingGameGridGenerator {
 	 * This allow to fix more pairs of cells in the grid (with identical value or not), without having make them separated from each other.
 	 * 
 	 * @param fixedCells			the matrix indicating which cells has been fixed in the game grid
-	 * @param cellsValue			the matrix containing the solution grid
+	 * @param solutionGrid			the matrix containing the solution grid
 	 * @param nbrOfPairsToFix		the number of pairs that the method will try to fix in the grid (fixing a cell can create more than one pair, depending on the number of fixed neighbours)
 	 * @param identicalPairsOnly	indicate to the method if it must only fix cells that are next to an already fixed cell of identical value
 	 * @return						the number of pairs that the method was able to successfully fix
@@ -241,7 +258,7 @@ public class StartingGameGridGenerator {
 	 * without using an already fixed cell to surround the hole cell.
 	 * 
 	 * @param fixedCells			the matrix indicating which cells has been fixed in the game grid
-	 * @param cellsValue			the matrix containing the solution grid
+	 * @param solutionGrid			the matrix containing the solution grid
 	 * @param nbrOfHolesToCreate	the number of hole to create in the game grid
 	 * @param identicalPairsOnly	indicate if the method must create hole that are surrounded by two identical values
 	 * @return						the number of holes that the method was able to successfully create in the game grid
@@ -319,7 +336,7 @@ public class StartingGameGridGenerator {
 	 * and using an already fixed cell to surround the hole cell.
 	 * 
 	 * @param fixedCells			the matrix indicating which cells has been fixed in the game grid
-	 * @param cellsValue			the matrix containing the solution grid
+	 * @param solutionGrid			the matrix containing the solution grid
 	 * @param nbrOfHolesToCreate	the number of hole to create in the game grid
 	 * @param identicalPairsOnly	indicate if the method must create hole that are surrounded by two identical values
 	 * @return						the number of holes that the method was able to successfully create in the game grid
@@ -389,6 +406,14 @@ public class StartingGameGridGenerator {
 	}
 	
 	
+	/*
+	 * Method that fix random cells in the grid, one at a time, until there exist only one solution
+	 * for the given starting game grid.
+	 * 
+	 * @param fixedCells	the matrix indicating which cells has been fixed in the game grid
+	 * @param solutionGrid	the matrix containing the solution grid
+	 * @return				
+	 */
 	private static void makeStartingGridSingleSolution(boolean[][] fixedCells, byte[][] solutionGrid) {
 		byte[][] startingGameGrid = new byte[solutionGrid.length][solutionGrid.length];
 		for (int rowInd = 0 ; rowInd < startingGameGrid.length ; rowInd++)

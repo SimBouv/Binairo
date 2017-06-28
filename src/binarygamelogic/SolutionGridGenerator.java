@@ -4,8 +4,7 @@ import java.util.*;
 
 /*
  * Class containing static methods used to randomly generate a valid solution grid, from which
- * we can then derive a starting game grid. The only public method is generatedGrid(...), which
- * we call return in matrix form a randomly generated solution grid.
+ * we can then derive a starting game grid.
  */
 
 public class SolutionGridGenerator {	
@@ -51,24 +50,21 @@ public class SolutionGridGenerator {
 		if (rowInd == solutionGrid.length)
 			return true;
 		
-		return randomlyFillRow(rowInd, 0, solutionGrid);
+		return randomlyFillCells(rowInd, 0, solutionGrid);
 	}
 	
 
 	
 	/*
-	 * Method that finish filling the row selecting randomly between 0 or 1. At each step the method find
-	 * the next empty cell then decide randomly which value to try to put in it first, then call itself
-	 * recursively to fill the next empty cell.
+	 * Method called recursively to randomly fill the grid while respecting all of the game
+	 * constraints (which gives a random solution grid). 
 	 * 
-	 * @param grid				the solution grid built until now
-	 * @param newRowInd			the index of the new row that is being built
-	 * @param freeCellInd		the index of the free cell to fill with a value
-	 * @param colNumberZeros	the number of zeros that appear in each column (in the grid built until now)
-	 * @param colNumberOnes		the number of ones that appear in each column (in the grid built until now)
-	 * @return					true if we can complete the row and after that the whole grid from here, false otherwise
+	 * @param rowInd			row index of the cell to fill with a value
+	 * @param colInd			column index of the cell to fill with a value 
+	 * @param solutionGrid		the solution grid built until now
+	 * @return					true if the method can complete the grid from this point, false otherwise
 	 */
-	private static boolean randomlyFillRow(int rowInd, int colInd, byte[][] solutionGrid) {
+	private static boolean randomlyFillCells(int rowInd, int colInd, byte[][] solutionGrid) {
 		//If true, then we have filled all the cells in the row and can then add it to the grid
 		if (colInd == solutionGrid[rowInd].length)
 			return generateSolutionGrid(rowInd+1, solutionGrid);
@@ -88,19 +84,21 @@ public class SolutionGridGenerator {
 		for (int i = 0 ; i < randomValues.length ; i++) {
 			solutionGrid[rowInd][colInd] = randomValues[i];
 
+			//Check if the grid is still valid after filling the cell with the random value.
+			//If not, then it must try the next value instead.
 			if (GameGridVerifier.checkLocalCellConstraints(rowInd, colInd, solutionGrid) &&
 				GameGridVerifier.checkRowConstraints(rowInd, solutionGrid) &&
 				GameGridVerifier.checkColConstraints(colInd, solutionGrid))
 			{				
-				if (randomlyFillRow(rowInd, colInd+1, solutionGrid))
+				if (randomlyFillCells(rowInd, colInd+1, solutionGrid))
 					return true;
 			}
 		}
 		
 		solutionGrid[rowInd][colInd] = Game.CELLVALUE_EMPTY;
 		
-		//The method wasn't able to find a valid row considering the rows already added to 
-		//the solution grid : must then backtrack in the grid creation process.
+		//The method wasn't able to find a valid solution grid from this point : must backtrack to the previous cell
+		//and try filling it with another value. 
 		return false;
 	}	
 }
