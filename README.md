@@ -11,4 +11,6 @@ these numbers while respecting the three following rules:
    
 3. When the grid is completely filled, there must not be two rows that are identical or two columns that are identical.
 
-*To run the game using the Binairo.jar file you also need to have the "Language files" and "Images" folder in the same folder as the .jar file.
+Also, each starting grid only have one possible solution to them.
+
+* To run the game using the Binairo.jar file you also need to have the "Language files" and "Images" folder in the same folder as the .jar file.
